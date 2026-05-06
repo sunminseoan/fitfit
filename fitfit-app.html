@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitFit — 아기 옷 사이즈 추천</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+/* ── Clay Design System tokens ── */
+:root {
+  --clay-canvas:           #faf9f7;
+  --clay-white:            #ffffff;
+  --clay-black:            #000000;
+  --clay-text-primary:     #000000;
+  --clay-text-secondary:   #9f9b93;
+  --clay-text-tertiary:    #55534e;
+  --clay-border-oat:       #dad4c8;
+  --clay-border-oat-light: #eee9df;
+  --clay-matcha-300:       #84e7a5;
+  --clay-matcha-600:       #078a52;
+  --clay-matcha-800:       #02492a;
+  --clay-slushie-500:      #3bd3fd;
+  --clay-slushie-800:      #0089ad;
+  --clay-lemon-400:        #f8cc65;
+  --clay-ube-300:          #c1b0ff;
+  --clay-ube-800:          #43089f;
+  --clay-pomegranate-400:  #fc7981;
+  --clay-dragonfruit:      #e8427c;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; min-height: 100vh; }
+body {
+  background: #e8e8e8;
+  font-family: 'Pretendard', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-start; padding: 40px 24px 60px;
+}
+#root { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+
+/* ── App header ── */
+.app-header { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.app-logo {
+  font-size: 22px; font-weight: 700; letter-spacing: -1px;
+  color: #000; font-feature-settings: 'ss01','ss03','ss10','ss11','ss12';
+  display: flex; align-items: center; gap: 8px;
+}
+.app-logo-badge {
+  background: #84e7a5; color: #02492a; font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 100px; letter-spacing: 0.5px; text-transform: uppercase;
+}
+.app-sub { font-size: 13px; color: #9f9b93; font-feature-settings: 'ss03','ss10','ss11','ss12'; }
+
+/* ── Phone layout ── */
+.phones-row { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+.phone-col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.phone-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 1.08px; color: #9f9b93;
+  font-feature-settings: 'ss03','ss10','ss11','ss12';
+}
+
+/* ── Screen helpers ── */
+.status-cover {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 58px; background: #fffbe8;
+  z-index: 25; pointer-events: none;
+}
+.screen-scroll {
+  height: 100%; overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.screen-scroll::-webkit-scrollbar { display: none; }
+
+/* ── Bottom nav ── */
+.bottom-nav {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 82px; background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(218,212,200,0.6);
+  display: flex; align-items: flex-start; justify-content: space-around;
+  padding-top: 10px; z-index: 30;
+}
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  cursor: pointer; padding: 0 8px; transition: opacity 0.15s;
+}
+.nav-item:hover { opacity: 0.7; }
+.nav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.3px; font-feature-settings: 'ss03'; }
+
+/* ── Inputs ── */
+.clay-input {
+  width: 100%; padding: 10px 14px;
+  border: 1px solid #dad4c8; border-radius: 12px;
+  background: #fff; font-family: 'Pretendard', Arial, sans-serif;
+  font-size: 14px; color: #000; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-shadow: rgba(0,0,0,0.04) 0px 1px 2px;
+}
+.clay-input:focus { border-color: #000; box-shadow: 0 0 0 3px rgba(0,0,0,0.06); }
+.clay-input::placeholder { color: #b5b0a8; }
+
+/* ── Buttons ── */
+.btn-primary {
+  width: 100%; padding: 13px; border-radius: 100px;
+  background: #000; color: #fff; border: none;
+  font-family: 'Pretendard', Arial, sans-serif;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  letter-spacing: -0.3px; transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-primary:hover { background: #84e7a5; color: #000; transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.btn-matcha {
+  padding: 11px 16px; border-radius: 100px;
+  background: #84e7a5; color: #02492a; border: none;
+  font-family: 'Pretendard', Arial, sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: transform 0.15s, background 0.15s; white-space: nowrap;
+}
+.btn-matcha:hover { background: #078a52; color: #fff; transform: translateY(-1px); }
+
+.btn-ghost {
+  padding: 8px 14px; border-radius: 100px;
+  background: transparent; color: #55534e;
+  border: 1px solid #dad4c8;
+  font-family: 'Pretendard', Arial, sans-serif;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s; white-space: nowrap;
+}
+.btn-ghost:hover { border-color: #000; background: #faf9f7; }
+
+.btn-salmon {
+  padding: 10px 16px; border-radius: 100px;
+  background: #fc7981; color: #fff; border: none;
+  font-family: 'Pretendard', Arial, sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+}
+.btn-salmon:hover { background: #e8427c; transform: translateY(-1px); }
+
+/* ── Gender toggle ── */
+.gender-toggle { display: flex; gap: 8px; }
+.gender-btn {
+  flex: 1; padding: 9px; border-radius: 11px;
+  border: 1px solid #dad4c8; background: #fff;
+  font-family: 'Pretendard', Arial, sans-serif;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all 0.15s; color: #55534e;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.gender-btn.active-boy  { background: #f0f8ff; border-color: #3bd3fd; color: #0089ad; font-weight: 600; }
+.gender-btn.active-girl { background: #fff0f5; border-color: #fc7981; color: #c0434a; font-weight: 600; }
+
+/* ── Profile card ── */
+.profile-card {
+  background: #fff; border: 1px solid #dad4c8; border-radius: 18px;
+  padding: 14px 16px; box-shadow: rgba(0,0,0,0.06) 0 2px 8px;
+  display: flex; align-items: center; gap: 12px; cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s; position: relative;
+}
+.profile-card:hover { box-shadow: rgba(0,0,0,0.12) 0 4px 16px; transform: translateY(-1px); }
+.profile-card.selected { border-color: #000 !important; border-width: 2px !important; box-shadow: rgba(0,0,0,0.10) 0 3px 12px; }
+
+/* ── Section label ── */
+.section-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1.2px; color: #9f9b93; margin-bottom: 8px;
+  font-feature-settings: 'ss03';
+}
+
+/* ── Result card ── */
+.result-card { background: #000; border-radius: 22px; padding: 20px; color: #fff; }
+.result-size-badge {
+  background: #84e7a5; color: #02492a;
+  border-radius: 14px; padding: 6px 20px;
+  font-size: 40px; font-weight: 700; letter-spacing: -2px;
+  display: inline-block; margin-bottom: 4px; font-feature-settings: 'ss01';
+}
+
+/* ── History item ── */
+.history-item {
+  background: #fff; border: 1px solid #dad4c8; border-radius: 16px;
+  padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+  transition: box-shadow 0.15s;
+}
+.history-item:hover { box-shadow: rgba(0,0,0,0.08) 0 3px 12px; }
+.history-brand-badge {
+  width: 56px; height: 56px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+/* ── Try-on overlay ── */
+.tryon-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 9999; display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.tryon-card {
+  background: #faf9f7; border-radius: 24px; padding: 20px;
+  max-width: 320px; width: 88%;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.4);
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+
+/* ── Chips ── */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 100px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+}
+.chip-matcha  { background: #e8fdf0; color: #02492a; }
+.chip-lemon   { background: #fffbe8; color: #9d6a09; }
+.chip-ube     { background: #f4f0ff; color: #43089f; }
+.chip-slushie { background: #e8f9ff; color: #0089ad; }
+.chip-pomeg   { background: #fff0f1; color: #c0434a; }
+
+/* ── Upload box ── */
+.upload-box {
+  border: 2px dashed #dad4c8; border-radius: 14px; padding: 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s; background: #faf9f7;
+}
+.upload-box:hover { border-color: #000; background: #fff; }
+
+/* ── Floating orb animations ── */
+@keyframes floatA { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-10px)} }
+@keyframes floatB { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(8px)} }
+@keyframes floatC { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-6px)} }
+@keyframes spin    { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- ios-frame component (inlined) -->
+<script type="text/babel">
+function IOSStatusBar({ dark = false, time = '9:41' }) {
+  const c = dark ? '#fff' : '#000';
+  return (
+    <div style={{
+      display:'flex', gap:154, alignItems:'center', justifyContent:'center',
+      padding:'21px 24px 19px', boxSizing:'border-box',
+      position:'relative', zIndex:20, width:'100%',
+    }}>
+      <div style={{flex:1,height:22,display:'flex',alignItems:'center',justifyContent:'center',paddingTop:1.5}}>
+        <span style={{fontFamily:'-apple-system,"SF Pro",system-ui',fontWeight:590,fontSize:17,lineHeight:'22px',color:c}}>{time}</span>
+      </div>
+      <div style={{flex:1,height:22,display:'flex',alignItems:'center',justifyContent:'center',gap:7,paddingTop:1,paddingRight:1}}>
+        <svg width="19" height="12" viewBox="0 0 19 12">
+          <rect x="0" y="7.5" width="3.2" height="4.5" rx="0.7" fill={c}/>
+          <rect x="4.8" y="5" width="3.2" height="7" rx="0.7" fill={c}/>
+          <rect x="9.6" y="2.5" width="3.2" height="9.5" rx="0.7" fill={c}/>
+          <rect x="14.4" y="0" width="3.2" height="12" rx="0.7" fill={c}/>
+        </svg>
+        <svg width="17" height="12" viewBox="0 0 17 12">
+          <path d="M8.5 3.2C10.8 3.2 12.9 4.1 14.4 5.6L15.5 4.5C13.7 2.7 11.2 1.5 8.5 1.5C5.8 1.5 3.3 2.7 1.5 4.5L2.6 5.6C4.1 4.1 6.2 3.2 8.5 3.2Z" fill={c}/>
+          <path d="M8.5 6.8C9.9 6.8 11.1 7.3 12 8.2L13.1 7.1C11.8 5.9 10.2 5.1 8.5 5.1C6.8 5.1 5.2 5.9 3.9 7.1L5 8.2C5.9 7.3 7.1 6.8 8.5 6.8Z" fill={c}/>
+          <circle cx="8.5" cy="10.5" r="1.5" fill={c}/>
+        </svg>
+        <svg width="27" height="13" viewBox="0 0 27 13">
+          <rect x="0.5" y="0.5" width="23" height="12" rx="3.5" stroke={c} strokeOpacity="0.35" fill="none"/>
+          <rect x="2" y="2" width="20" height="9" rx="2" fill={c}/>
+          <path d="M25 4.5V8.5C25.8 8.2 26.5 7.2 26.5 6.5C26.5 5.8 25.8 4.8 25 4.5Z" fill={c} fillOpacity="0.4"/>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function IOSGlassPill({ children, dark = false, style = {} }) {
+  return (
+    <div style={{
+      height:44, minWidth:44, borderRadius:9999, position:'relative', overflow:'hidden',
+      display:'flex', alignItems:'center', justifyContent:'center',
+      boxShadow: dark
+        ? '0 2px 6px rgba(0,0,0,0.35),0 6px 16px rgba(0,0,0,0.2)'
+        : '0 1px 3px rgba(0,0,0,0.07),0 3px 10px rgba(0,0,0,0.06)',
+      ...style,
+    }}>
+      <div style={{position:'absolute',inset:0,borderRadius:9999,backdropFilter:'blur(12px) saturate(180%)',WebkitBackdropFilter:'blur(12px) saturate(180%)',background:dark?'rgba(120,120,128,0.28)':'rgba(255,255,255,0.5)'}}/>
+      <div style={{position:'absolute',inset:0,borderRadius:9999,boxShadow:dark?'inset 1.5px 1.5px 1px rgba(255,255,255,0.15),inset -1px -1px 1px rgba(255,255,255,0.08)':'inset 1.5px 1.5px 1px rgba(255,255,255,0.7),inset -1px -1px 1px rgba(255,255,255,0.4)',border:dark?'0.5px solid rgba(255,255,255,0.15)':'0.5px solid rgba(0,0,0,0.06)'}}/>
+      <div style={{position:'relative',zIndex:1,display:'flex',alignItems:'center',padding:'0 4px'}}>{children}</div>
+    </div>
+  );
+}
+
+function IOSDevice({ children, width = 402, height = 874, dark = false }) {
+  return (
+    <div style={{
+      width, height, borderRadius:48, overflow:'hidden', position:'relative',
+      background: dark ? '#000' : '#F2F2F7',
+      boxShadow:'0 40px 80px rgba(0,0,0,0.18),0 0 0 1px rgba(0,0,0,0.12)',
+      fontFamily:'-apple-system,system-ui,sans-serif',
+      WebkitFontSmoothing:'antialiased',
+    }}>
+      {/* Dynamic island */}
+      <div style={{position:'absolute',top:11,left:'50%',transform:'translateX(-50%)',width:126,height:37,borderRadius:24,background:'#000',zIndex:50}}/>
+      {/* Status bar */}
+      <div style={{position:'absolute',top:0,left:0,right:0,zIndex:10}}>
+        <IOSStatusBar dark={dark}/>
+      </div>
+      {/* Content */}
+      <div style={{height:'100%',display:'flex',flexDirection:'column'}}>
+        <div style={{flex:1,overflow:'auto'}}>{children}</div>
+      </div>
+      {/* Home indicator */}
+      <div style={{position:'absolute',bottom:0,left:0,right:0,zIndex:60,height:34,display:'flex',justifyContent:'center',alignItems:'flex-end',paddingBottom:8,pointerEvents:'none'}}>
+        <div style={{width:139,height:5,borderRadius:100,background:dark?'rgba(255,255,255,0.7)':'rgba(0,0,0,0.25)'}}/>
+      </div>
+    </div>
+  );
+}
+</script>
+
+<!-- Main App -->
+<script type="text/babel">
+
+// ── Claude API (API 키는 Vercel 환경변수 ANTHROPIC_API_KEY에 저장) ──
+async function callClaude(profile, brand, product) {
+  const res = await fetch('/api/recommend', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ profile, brand, product }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `API 오류 (${res.status})`);
+  }
+
+  return res.json();
+}
+
+// ── Icons ──────────────────────────────────────────────────────
+const Icon = {
+  baby:    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>,
+  clock:   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  edit:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+  trash:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>,
+  camera:  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+  link:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>,
+  image:   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+  buy:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>,
+  plus:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  close:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  chevron: <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 2.5L4 5L6.5 2.5" stroke="#9f9b93" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+};
+
+// ── Character icons ────────────────────────────────────────────
+const CHAR_ICONS = {
+  'star-yellow': { bg: '#fff4cf', svg:
+    <svg viewBox="0 0 40 40" fill="none"><path d="M20 5L23.6 14.5L33.5 15L25.7 21.4L28.3 31L20 25.6L11.7 31L14.3 21.4L6.5 15L16.4 14.5L20 5Z" fill="#F8CC65"/><circle cx="16.5" cy="19" r="1.6" fill="#1a1a1a"/><circle cx="23.5" cy="19" r="1.6" fill="#1a1a1a"/><circle cx="17" cy="18.5" r="0.5" fill="#fff"/><circle cx="24" cy="18.5" r="0.5" fill="#fff"/><path d="M17 22.2C18 23.4 22 23.4 23 22.2" stroke="#1a1a1a" strokeWidth="1.3" strokeLinecap="round"/><circle cx="14.5" cy="22" r="1.1" fill="#fc7981" opacity="0.55"/><circle cx="25.5" cy="22" r="1.1" fill="#fc7981" opacity="0.55"/></svg>
+  },
+  'cloud-blue': { bg: '#ddeeff', svg:
+    <svg viewBox="0 0 40 40" fill="none"><path d="M20 8C17 8 14.2 9.8 12.8 12.6C10.6 13.2 9 15.2 9 17.5C9 20.3 11.3 22.5 14.2 22.5H25.8C28.7 22.5 31 20.3 31 17.5C31 15.2 29.4 13.2 27.2 12.6C25.8 9.8 23 8 20 8Z" fill="#3B82F6"/><path d="M13 22.5C11 22.5 9 24 9 26.5C9 29 11 30.5 13 30.5H27C29 30.5 31 29 31 26.5C31 24 29 22.5 27 22.5" fill="#3B82F6"/><circle cx="16.5" cy="23" r="2" fill="#1a1a1a"/><circle cx="23.5" cy="23" r="2" fill="#1a1a1a"/><path d="M16.5 27.5C17.5 28.7 22.5 28.7 23.5 27.5" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round"/></svg>
+  },
+  'flower-pink': { bg: '#fce8f8', svg:
+    <svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="13" r="5" fill="#E040FB"/><circle cx="27" cy="17" r="5" fill="#E040FB"/><circle cx="27" cy="25" r="5" fill="#E040FB"/><circle cx="20" cy="29" r="5" fill="#E040FB"/><circle cx="13" cy="25" r="5" fill="#E040FB"/><circle cx="13" cy="17" r="5" fill="#E040FB"/><circle cx="20" cy="21" r="7" fill="#E040FB"/><circle cx="17.5" cy="20" r="2" fill="#1a1a1a"/><circle cx="22.5" cy="20" r="2" fill="#1a1a1a"/><path d="M17.5 24C18.3 25.2 21.7 25.2 22.5 24" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round"/></svg>
+  },
+  'flower-yellow': { bg: '#fff9d6', svg:
+    <svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="13" r="5" fill="#FBBF24"/><circle cx="27" cy="17" r="5" fill="#FBBF24"/><circle cx="27" cy="25" r="5" fill="#FBBF24"/><circle cx="20" cy="29" r="5" fill="#FBBF24"/><circle cx="13" cy="25" r="5" fill="#FBBF24"/><circle cx="13" cy="17" r="5" fill="#FBBF24"/><circle cx="20" cy="21" r="7" fill="#FBBF24"/><circle cx="17.5" cy="20" r="2" fill="#1a1a1a"/><circle cx="22.5" cy="20" r="2" fill="#1a1a1a"/><path d="M17.5 24.5C18.5 25.5 21.5 25.5 22.5 24.5" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round"/></svg>
+  },
+  'rabbit': { bg: '#f0eeff', svg:
+    <svg viewBox="0 0 40 40" fill="none"><ellipse cx="14" cy="11" rx="3.5" ry="6" fill="#c1b0ff"/><ellipse cx="26" cy="11" rx="3.5" ry="6" fill="#c1b0ff"/><ellipse cx="14" cy="11" rx="2" ry="4" fill="#fc7981"/><ellipse cx="26" cy="11" rx="2" ry="4" fill="#fc7981"/><ellipse cx="20" cy="25" rx="10" ry="9" fill="#c1b0ff"/><circle cx="16.5" cy="23.5" r="2" fill="#1a1a1a"/><circle cx="23.5" cy="23.5" r="2" fill="#1a1a1a"/><circle cx="17.2" cy="22.8" r="0.7" fill="#fff"/><circle cx="24.2" cy="22.8" r="0.7" fill="#fff"/><ellipse cx="20" cy="27" rx="2" ry="1.2" fill="#fc7981"/><path d="M18 27.5C18.5 28.5 21.5 28.5 22 27.5" stroke="#1a1a1a" strokeWidth="1.2" strokeLinecap="round"/></svg>
+  },
+  'heart-green': { bg: '#d6f5e8', svg:
+    <svg viewBox="0 0 40 40" fill="none"><path d="M20 32C20 32 8 24 8 16C8 11.6 11.6 8 16 8C18 8 19.6 8.8 20 9.2C20.4 8.8 22 8 24 8C28.4 8 32 11.6 32 16C32 24 20 32 20 32Z" fill="#22C55E"/><circle cx="16.5" cy="17" r="2" fill="#1a1a1a"/><circle cx="23.5" cy="17" r="2" fill="#1a1a1a"/><circle cx="17.2" cy="16.3" r="0.7" fill="#fff"/><circle cx="24.2" cy="16.3" r="0.7" fill="#fff"/><path d="M16.5 22C17.5 23.5 22.5 23.5 23.5 22" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round"/></svg>
+  },
+};
+const CHAR_KEYS = Object.keys(CHAR_ICONS);
+
+// ── Sample data ────────────────────────────────────────────────
+const SAMPLE_PROFILES = [
+  { id: 1, name: '하늘이', gender: 'boy',  age: 8,  height: 68, weight: 7.8, emoji: 'heart-green', color: '#e8f9ff' },
+  { id: 2, name: '다솔이', gender: 'girl', age: 14, height: 78, weight: 9.5, emoji: 'flower-pink',  color: '#fff0f5' },
+];
+
+const SAMPLE_HISTORY = [
+  { id: 1, brand: '무민마마',    product: '베어 프린트 오버롤',     size: '80', date: '2026-05-03', profile: '하늘이', url: '#', color: '#e8fdf0', brandShort: 'MM', image: 'https://images.unsplash.com/photo-1522771930-78848d9293e8?w=200&h=200&fit=crop' },
+  { id: 2, brand: '알로앤루',    product: '스트라이프 수면조끼',     size: '90', date: '2026-05-01', profile: '다솔이', url: '#', color: '#fffbe8', brandShort: 'AR', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=200&h=200&fit=crop' },
+  { id: 3, brand: '보리보리',    product: '플리스 집업 점퍼',       size: '85', date: '2026-04-28', profile: '하늘이', url: '#', color: '#f4f0ff', brandShort: 'BB', image: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=200&h=200&fit=crop' },
+  { id: 4, brand: '리틀클라우드', product: '코튼 배냇저고리 세트',   size: '70', date: '2026-04-20', profile: '다솔이', url: '#', color: '#fff0f5', brandShort: 'LC', image: 'https://images.unsplash.com/photo-1515488764276-beab7607c1e6?w=200&h=200&fit=crop' },
+];
+
+// ── Avatar ─────────────────────────────────────────────────────
+function BabyAvatar({ profile, size = 48 }) {
+  const char = CHAR_ICONS[profile.emoji] || null;
+  if (char) {
+    return (
+      <div style={{ width:size, height:size, borderRadius:'50%', background:char.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden', padding:size*0.1 }}>
+        {char.svg}
+      </div>
+    );
+  }
+  return (
+    <div style={{ width:size, height:size, borderRadius:'50%', background: profile.gender==='girl'?'#fff0f5':'#e8f9ff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:size*0.46, flexShrink:0 }}>
+      {profile.emoji}
+    </div>
+  );
+}
+
+// ── Floating orbs header (shared across screens) ───────────────
+function ScreenHeader({ title, subtitle, orbColor2 = '#84e7a5' }) {
+  return (
+    <div style={{ position:'relative', padding:'72px 16px 12px', overflow:'hidden' }}>
+      <div style={{ position:'absolute', top:64,  right:28, width:7,  height:7,  borderRadius:'50%', background:'#3bd3fd',    animation:'floatB 2.8s ease-in-out infinite', opacity:0.8 }}/>
+      <div style={{ position:'absolute', top:100, right:18, width:18, height:18, borderRadius:'50%', background:orbColor2,    animation:'floatC 3.6s ease-in-out infinite', opacity:0.75 }}/>
+      <div style={{ position:'absolute', top:80,  right:60, width:5,  height:5,  borderRadius:'50%', background:'#fc7981',   animation:'floatA 2.5s ease-in-out infinite', opacity:0.8 }}/>
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2, position:'relative', zIndex:1 }}>
+        <span style={{ fontSize:26, fontWeight:900, letterSpacing:-0.5, color:'#fc7981', fontFamily:"'Nunito','Pretendard',sans-serif" }}>fitfit</span>
+        <span style={{ background:'#fc7981', color:'#fff', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:100, textTransform:'uppercase', letterSpacing:0.5 }}>BETA</span>
+      </div>
+      <div style={{ fontSize:20, fontWeight:700, letterSpacing:-0.6, color:'#000', marginBottom:1, fontFeatureSettings:'"ss01","ss03"', position:'relative', zIndex:1 }}>{title}</div>
+      <div style={{ fontSize:12, color:'#9f9b93', position:'relative', zIndex:1 }}>{subtitle}</div>
+    </div>
+  );
+}
+
+// ── Screen 1: Profile ──────────────────────────────────────────
+function ProfileScreen({ profiles, setProfiles, selectedProfile, setSelectedProfile, onRecommend }) {
+  const [showForm,   setShowForm]   = React.useState(false);
+  const [editTarget, setEditTarget] = React.useState(null);
+  const [form, setForm] = React.useState({ name:'', gender:'boy', age:'', height:'', weight:'', emoji:'cloud-blue' });
+
+  const openAdd  = () => { setForm({ name:'', gender:'boy', age:'', height:'', weight:'', emoji:'cloud-blue' }); setEditTarget(null); setShowForm(true); };
+  const openEdit = (p) => { setForm({ name:p.name, gender:p.gender, age:p.age, height:p.height, weight:p.weight, emoji:p.emoji }); setEditTarget(p.id); setShowForm(true); };
+
+  const saveProfile = () => {
+    if (!form.name || !form.age || !form.height || !form.weight) return;
+    if (editTarget) {
+      setProfiles(prev => prev.map(p => p.id === editTarget ? { ...p, ...form, age:+form.age, height:+form.height, weight:+form.weight } : p));
+    } else {
+      const newP = { id: Date.now(), ...form, age:+form.age, height:+form.height, weight:+form.weight, color: form.gender==='girl'?'#fff0f5':'#e8f9ff' };
+      setProfiles(prev => [...prev, newP]);
+    }
+    setShowForm(false);
+  };
+
+  const deleteProfile = (id) => {
+    setProfiles(prev => prev.filter(p => p.id !== id));
+    if (selectedProfile?.id === id) setSelectedProfile(null);
+  };
+
+  return (
+    <div className="screen-scroll" style={{ background:'#fffbe8', paddingBottom:90 }}>
+      <div className="status-cover"/>
+      <ScreenHeader title="아기 프로필" subtitle="사이즈 추천을 위한 우리 아기 정보를 등록해보세요" orbColor2="#fc7981"/>
+
+      <div style={{ padding:'0 16px' }}>
+        <div className="section-label">저장된 프로필 {profiles.length}</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {profiles.map(p => (
+            <div key={p.id} className={`profile-card${selectedProfile?.id===p.id?' selected':''}`}
+              onClick={() => setSelectedProfile(p)}
+              style={{ borderColor:'rgba(187,170,187,0.667)' }}>
+              <BabyAvatar profile={p} size={52}/>
+              <div style={{ flex:1 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
+                  <span style={{ fontSize:15, fontWeight:700, letterSpacing:-0.4 }}>{p.name}</span>
+                  <span className={`chip ${p.gender==='girl'?'chip-pomeg':'chip-slushie'}`}>{p.gender==='girl'?'여아':'남아'}</span>
+                </div>
+                <div style={{ display:'flex', gap:6 }}>
+                  <span style={{ fontSize:12, color:'#55534e' }}>{p.age}개월</span>
+                  <span style={{ fontSize:12, color:'#b5b0a8' }}>·</span>
+                  <span style={{ fontSize:12, color:'#55534e' }}>{p.height}cm</span>
+                  <span style={{ fontSize:12, color:'#b5b0a8' }}>·</span>
+                  <span style={{ fontSize:12, color:'#55534e' }}>{p.weight}kg</span>
+                </div>
+              </div>
+              <button onClick={e => { e.stopPropagation(); openEdit(p); }}
+                style={{ background:'none', border:'none', cursor:'pointer', color:'#b5b0a8', padding:6, borderRadius:8, display:'flex', alignItems:'center', transition:'color 0.15s' }}
+                onMouseOver={e => e.currentTarget.style.color='#000'}
+                onMouseOut={e  => e.currentTarget.style.color='#b5b0a8'}>
+                {Icon.edit}
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <button onClick={openAdd}
+          style={{ marginTop:10, width:'100%', padding:'12px', borderRadius:14, border:'2px dashed #dad4c8', cursor:'pointer', display:'flex', alignItems:'center', gap:6, justifyContent:'center', fontSize:13, fontWeight:600, color:'#9f9b93', background:'#fffbe8', fontFamily:'Pretendard', transition:'border-color 0.15s, color 0.15s', opacity:0.84 }}
+          onMouseOver={e => { e.currentTarget.style.borderColor='#000'; e.currentTarget.style.color='#000'; }}
+          onMouseOut={e  => { e.currentTarget.style.borderColor='#dad4c8'; e.currentTarget.style.color='#9f9b93'; }}>
+          {Icon.plus} 새 프로필 추가
+        </button>
+      </div>
+
+      {selectedProfile && (
+        <div style={{ padding:'16px 16px 0' }}>
+          <button className="btn-primary" onClick={onRecommend} style={{ height:50 }}>
+            이 프로필로 사이즈 추천받기 →
+          </button>
+        </div>
+      )}
+
+      {/* Decorative bottom orbs */}
+      <div style={{ position:'absolute', bottom:100, left:20,  width:18, height:18, borderRadius:'50%', background:'#f8cc65', animation:'floatA 3.2s ease-in-out infinite', opacity:0.9, zIndex:5, pointerEvents:'none' }}/>
+      <div style={{ position:'absolute', bottom:128, left:46,  width:12, height:12, borderRadius:'50%', background:'#84e7a5', animation:'floatB 4s ease-in-out infinite',   opacity:0.8, zIndex:5, pointerEvents:'none' }}/>
+
+      {/* Form sheet */}
+      {showForm && (
+        <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'flex-end', backdropFilter:'blur(4px)' }}>
+          <div style={{ background:'#faf9f7', borderRadius:'24px 24px 0 0', padding:'20px 20px 36px', width:'100%', maxHeight:'85vh', overflowY:'auto' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+              <div style={{ fontSize:17, fontWeight:700, letterSpacing:-0.5 }}>{editTarget?'프로필 수정':'새 프로필'}</div>
+              <button onClick={() => setShowForm(false)} style={{ background:'#f0ede8', border:'none', borderRadius:'50%', width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#55534e' }}>{Icon.close}</button>
+            </div>
+
+            <div style={{ marginBottom:14 }}>
+              <div className="section-label" style={{ letterSpacing:0 }}>아기 캐릭터</div>
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                {CHAR_KEYS.filter(k => k !== 'star-yellow').map(k => (
+                  <button key={k} onClick={() => setForm(f => ({ ...f, emoji:k }))}
+                    style={{ width:48, height:48, borderRadius:'50%', padding:5, border:`2px solid ${form.emoji===k?'#000':'transparent'}`, background:CHAR_ICONS[k].bg, cursor:'pointer', transition:'border-color 0.15s', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <div style={{ width:34, height:34 }}>{CHAR_ICONS[k].svg}</div>
+                  </button>
+                ))}
+                <button style={{ width:48, height:48, borderRadius:'50%', border:'2px dashed #dad4c8', background:'#faf9f7', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#9f9b93' }}>
+                  {Icon.camera}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <div>
+                <div className="section-label" style={{ letterSpacing:0 }}>닉네임</div>
+                <input className="clay-input" placeholder="예: 하늘이" value={form.name} onChange={e => setForm(f => ({ ...f, name:e.target.value }))} style={{ height:44 }}/>
+              </div>
+              <div>
+                <div className="section-label" style={{ letterSpacing:0 }}>성별</div>
+                <div className="gender-toggle">
+                  <button className={`gender-btn${form.gender==='boy'?' active-boy':''}`} onClick={() => setForm(f => ({ ...f, gender:'boy' }))} style={{ borderRadius:100, height:44 }}>남아</button>
+                  <button className={`gender-btn${form.gender==='girl'?' active-girl':''}`} onClick={() => setForm(f => ({ ...f, gender:'girl' }))} style={{ borderRadius:100, height:44 }}>여아</button>
+                </div>
+              </div>
+              <div>
+                <div className="section-label" style={{ letterSpacing:0 }}>월령(개월)</div>
+                <input className="clay-input" type="number" placeholder="예: 8" value={form.age} onChange={e => setForm(f => ({ ...f, age:e.target.value }))} style={{ height:44 }}/>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                <div>
+                  <div className="section-label" style={{ letterSpacing:0 }}>키(CM)</div>
+                  <input className="clay-input" type="number" placeholder="예: 68" value={form.height} onChange={e => setForm(f => ({ ...f, height:e.target.value }))} style={{ height:44 }}/>
+                </div>
+                <div>
+                  <div className="section-label" style={{ letterSpacing:0 }}>몸무게(KG)</div>
+                  <input className="clay-input" type="number" placeholder="예: 7.8" value={form.weight} onChange={e => setForm(f => ({ ...f, weight:e.target.value }))} style={{ height:44 }}/>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop:20, display:'flex', flexDirection:editTarget?'row':'column', gap:8 }}>
+              {editTarget && (
+                <button onClick={() => { deleteProfile(editTarget); setShowForm(false); }}
+                  style={{ flex:1, padding:'14px', borderRadius:999, fontFamily:'inherit', fontSize:14, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6, border:'1.5px solid #e5e2dc', background:'#f1efe4', color:'#515151', height:50 }}>
+                  {Icon.trash} 프로필 삭제
+                </button>
+              )}
+              <button className="btn-primary" onClick={saveProfile} style={{ height:50, flex:1 }}>저장하기</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Screen 2: Recommend ────────────────────────────────────────
+function RecommendScreen({ selectedProfile, histories, setHistories }) {
+  const [url,             setUrl]             = React.useState('');
+  const [brand,           setBrand]           = React.useState('');
+  const [product,         setProduct]         = React.useState('');
+  const [hasImage,        setHasImage]        = React.useState(false);
+  const [showResult,      setShowResult]      = React.useState(false);
+  const [loading,         setLoading]         = React.useState(false);
+  const [showTryOn,       setShowTryOn]       = React.useState(false);
+  const [showBrandInput,  setShowBrandInput]  = React.useState(false);
+  const [result,          setResult]          = React.useState(null);
+  const [error,           setError]           = React.useState(null);
+
+  const profile = selectedProfile || SAMPLE_PROFILES[0];
+
+  const handleRecommend = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await callClaude(profile, brand, product);
+      setResult(data);
+      setShowResult(true);
+    } catch (err) {
+      setError(err.message || 'AI 추천 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveToHistory = () => {
+    const newEntry = {
+      id: Date.now(),
+      brand:     brand || '무민마마',
+      product:   product || '베어 프린트 오버롤',
+      size:      result?.recommendedSize || '80',
+      date:      new Date().toISOString().slice(0, 10),
+      profile:   profile.name,
+      url:       url || '#',
+      color:     '#e8fdf0',
+      brandShort:(brand || '무민마마').slice(0, 2),
+    };
+    setHistories(prev => [newEntry, ...prev]);
+  };
+
+  const resetForm = () => {
+    setShowResult(false); setUrl(''); setBrand(''); setProduct('');
+    setHasImage(false); setResult(null); setError(null);
+  };
+
+  return (
+    <div className="screen-scroll" style={{ background:'#fffbe8', paddingBottom:90 }}>
+      <div className="status-cover"/>
+      <ScreenHeader title="사이즈 추천" subtitle="AI가 딱 맞는 사이즈를 골라드려요"/>
+
+      {/* Profile banner */}
+      <div style={{ margin:'4px 16px 0' }}>
+        <div className="section-label" style={{ letterSpacing:'0.4px', fontFamily:'Pretendard' }}>선택된 아기 프로필</div>
+      </div>
+      <div style={{ margin:'0 16px', background:'#000', borderRadius:18, padding:'14px 16px', display:'flex', alignItems:'center', gap:12 }}>
+        <BabyAvatar profile={profile} size={44}/>
+        <div style={{ flex:1, fontSize:16, fontWeight:700, color:'#fff', letterSpacing:-0.5 }}>{profile.name}</div>
+        {[['개월', profile.age], ['cm', profile.height], ['kg', profile.weight]].map(([unit, val], i) => (
+          <React.Fragment key={unit}>
+            {i > 0 && <div style={{ width:1, background:'#333' }}/>}
+            <div style={{ textAlign:'center' }}>
+              <div style={{ fontSize:16, fontWeight:700, color:'#84e7a5', lineHeight:1.1 }}>{val}</div>
+              <div style={{ fontSize:10, color:'#9f9b93', marginTop:1 }}>{unit}</div>
+            </div>
+          </React.Fragment>
+        ))}
+      </div>
+
+      {/* Decorative bottom orbs */}
+      <div style={{ position:'absolute', bottom:100, left:20,  width:18, height:18, borderRadius:'50%', background:'#f8cc65', animation:'floatA 3.2s ease-in-out infinite', opacity:0.9, zIndex:5, pointerEvents:'none' }}/>
+      <div style={{ position:'absolute', bottom:128, left:46,  width:12, height:12, borderRadius:'50%', background:'#84e7a5', animation:'floatB 4s ease-in-out infinite',   opacity:0.8, zIndex:5, pointerEvents:'none' }}/>
+
+      {!showResult ? (
+        <div style={{ padding:'16px 16px 0', display:'flex', flexDirection:'column', gap:14 }}>
+          {/* URL input */}
+          <div>
+            <div className="section-label" style={{ letterSpacing:'0.4px' }}>상품 URL</div>
+            <div style={{ position:'relative' }}>
+              <div style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#9f9b93' }}>{Icon.link}</div>
+              <input className="clay-input" style={{ paddingLeft:38, height:44, borderColor:'rgb(186,186,186)' }}
+                placeholder="상품 페이지 URL 붙여넣기" value={url} onChange={e => setUrl(e.target.value)}/>
+            </div>
+          </div>
+
+          {/* Image upload */}
+          <div>
+            <div className="section-label" style={{ letterSpacing:'0.4px' }}>사이즈표 이미지 첨부</div>
+            <div className="upload-box" onClick={() => setHasImage(!hasImage)} style={{ backgroundColor:'#fffbe8' }}>
+              {hasImage ? (
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+                  <div style={{ fontSize:28 }}>🖼️</div>
+                  <div style={{ fontSize:13, fontWeight:600, color:'#078a52' }}>사이즈표 첨부됨</div>
+                  <div style={{ fontSize:11, color:'#9f9b93' }}>탭하여 변경</div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ color:'#9f9b93' }}>{Icon.image}</div>
+                  <div style={{ fontSize:13, fontWeight:600, color:'#55534e' }}>이미지 첨부</div>
+                  <div style={{ fontSize:11, color:'#9f9b93' }}>브랜드 사이즈표 사진을 올려주세요</div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Brand/product toggle */}
+          <div>
+            <button onClick={() => setShowBrandInput(!showBrandInput)}
+              style={{ background:'none', border:'none', cursor:'pointer', fontSize:13, color:'#9f9b93', fontFamily:'inherit', display:'flex', alignItems:'center', gap:6, padding:0 }}>
+              브랜드·상품명 직접 입력
+              <span style={{ display:'inline-flex', alignItems:'center', width:18, height:18, borderRadius:'50%', border:'1.5px solid #9f9b93', justifyContent:'center', transform:showBrandInput?'rotate(180deg)':'rotate(0deg)', transition:'transform 0.2s' }}>
+                {Icon.chevron}
+              </span>
+            </button>
+            {showBrandInput && (
+              <div style={{ marginTop:10, display:'flex', flexDirection:'column', gap:8 }}>
+                <input className="clay-input" placeholder="브랜드명 (예: 무민마마)" value={brand} onChange={e => setBrand(e.target.value)}/>
+                <input className="clay-input" placeholder="상품명 (예: 베어 프린트 오버롤)" value={product} onChange={e => setProduct(e.target.value)}/>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div style={{ background:'#fff0f1', border:'1.5px solid #fc7981', borderRadius:12, padding:'12px 14px', fontSize:13, color:'#c0434a', lineHeight:1.5 }}>
+              ⚠️ {error}
+            </div>
+          )}
+
+          <button className="btn-primary" onClick={handleRecommend} disabled={loading} style={{ height:50 }}>
+            {loading ? (
+              <span style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation:'spin 1s linear infinite' }}>
+                  <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                </svg>
+                Claude AI 분석 중...
+              </span>
+            ) : (
+              <><span style={{ fontSize:16 }}>✨</span> AI 추천받기</>
+            )}
+          </button>
+        </div>
+      ) : (
+        <div style={{ padding:'14px 16px 0', display:'flex', flexDirection:'column', gap:12 }}>
+          {(brand || product) && (
+            <div style={{ background:'#fff', border:'1.5px solid #dad4c8', borderRadius:14, padding:'12px 14px' }}>
+              <div style={{ fontSize:11, color:'#9f9b93', fontWeight:600, textTransform:'uppercase', letterSpacing:0.8 }}>{brand || '무민마마'}</div>
+              <div style={{ fontSize:14, fontWeight:600, color:'#000', marginTop:2 }}>{product || '베어 프린트 오버롤'}</div>
+            </div>
+          )}
+
+          <div className="result-card">
+            <div style={{ fontSize:12, color:'#84e7a5', fontWeight:600, textTransform:'uppercase', marginBottom:10, letterSpacing:'0.2px' }}>AI 추천 사이즈</div>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12, marginBottom:14 }}>
+              <div className="result-size-badge" style={{ borderRadius:'50%', width:100, height:100, display:'flex', alignItems:'center', justifyContent:'center', padding:0, fontSize:44 }}>
+                {result.recommendedSize}
+              </div>
+              <div style={{ fontSize:11, color:'#9f9b93', marginTop:-6 }}>KR 사이즈 기준</div>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6, justifyContent:'center' }}>
+                <span style={{ color:'#84e7a5', padding:'3px 8px', borderRadius:8, fontSize:11, fontWeight:600, background:'rgba(255,255,255,0.13)' }}>{result.fitType}</span>
+                <span style={{ color:'#f8cc65', padding:'3px 8px', borderRadius:8, fontSize:11, fontWeight:600, background:'rgba(255,255,255,0.15)' }}>{result.wearingPeriod}</span>
+              </div>
+            </div>
+
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+              {[
+                { label:'핏 예측',       value: result.fitType,                                icon:'👕' },
+                { label:'착용 가능 기간', value: result.wearingPeriod,                         icon:'📅' },
+                { label:'권장 차선',      value: `${result.alternativeSize} (다음 시즌)`,      icon:'📦' },
+                { label:'신뢰도',         value: `${result.confidence}%`,                      icon:'✅' },
+              ].map((item, i) => (
+                <div key={i} style={{ borderRadius:12, padding:'10px 12px', background:'rgba(255,255,255,0.13)' }}>
+                  <div style={{ fontSize:10, color:'#666', fontWeight:600, textTransform:'uppercase', letterSpacing:0.8 }}>{item.label}</div>
+                  <div style={{ fontSize:13, fontWeight:600, color:'#fff', marginTop:3 }}>{item.icon} {item.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop:12, background:'#111', borderRadius:12, padding:'12px 14px' }}>
+              <div style={{ fontSize:10, color:'#666', fontWeight:600, textTransform:'uppercase', letterSpacing:0.8, marginBottom:6 }}>AI 코멘트</div>
+              <div style={{ fontSize:13, color:'#fff', lineHeight:1.6 }}>{result.comment}</div>
+            </div>
+          </div>
+
+          <button onClick={() => setShowTryOn(true)}
+            style={{ width:'100%', padding:'13px', background:'linear-gradient(135deg,#c1b0ff,#84e7a5)', color:'#000', border:'none', fontFamily:'inherit', fontSize:15, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, letterSpacing:-0.3, transition:'transform 0.15s,box-shadow 0.15s', height:50, borderRadius:100 }}
+            onMouseOver={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(193,176,255,0.4)'; }}
+            onMouseOut={e  => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}>
+            <span style={{ fontSize:18 }}>👗</span> AI 입어보기
+          </button>
+
+          <div style={{ display:'flex', gap:8 }}>
+            <button className="btn-matcha" style={{ flex:1, height:44 }} onClick={saveToHistory}>히스토리 저장</button>
+            <button className="btn-ghost"  style={{ flex:1 }} onClick={resetForm}>다시 추천받기</button>
+          </div>
+        </div>
+      )}
+
+      {showTryOn && <TryOnOverlay profile={profile} onClose={() => setShowTryOn(false)} brand={brand||'무민마마'} product={product||'베어 프린트 오버롤'} size={result?.recommendedSize || '80'}/>}
+    </div>
+  );
+}
+
+// ── Try-on overlay ─────────────────────────────────────────────
+function TryOnOverlay({ profile, onClose, brand, product, size = '80' }) {
+  const [loading, setLoading] = React.useState(true);
+  React.useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 2000);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div className="tryon-overlay" onClick={onClose}>
+      <div className="tryon-card" onClick={e => e.stopPropagation()}>
+        <div style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div>
+            <div style={{ fontSize:17, fontWeight:700, letterSpacing:-0.5 }}>AI 입어보기</div>
+            <div style={{ fontSize:12, color:'#9f9b93' }}>{brand} · {product}</div>
+          </div>
+          <button onClick={onClose} style={{ background:'#f0ede8', border:'none', borderRadius:'50%', width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#55534e' }}>{Icon.close}</button>
+        </div>
+
+        <div style={{ width:'100%', height:200, background:'linear-gradient(160deg,#e8f9ff,#f4f0ff)', borderRadius:16, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', border:'1px solid #dad4c8', position:'relative', overflow:'hidden' }}>
+          {loading ? (
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
+              <div style={{ fontSize:40, animation:'spin 1s linear infinite', display:'inline-block' }}>✨</div>
+              <div style={{ fontSize:14, fontWeight:600, color:'#55534e' }}>AI가 합성 중이에요...</div>
+              <div style={{ fontSize:12, color:'#9f9b93' }}>잠시만 기다려주세요</div>
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+              <div style={{ fontSize:56 }}>🧒</div>
+              <div style={{ fontSize:28, marginTop:-10 }}>👕</div>
+              <div style={{ background:'#84e7a5', color:'#02492a', padding:'3px 12px', borderRadius:100, fontSize:11, fontWeight:700 }}>{size}사이즈 착용</div>
+              <div style={{ fontSize:11, color:'#55534e', textAlign:'center', lineHeight:1.5 }}>여유있게 맞아요!<br/>앞으로 3~4개월 착용 가능</div>
+            </div>
+          )}
+          <div style={{ position:'absolute', bottom:10, right:12, fontSize:10, color:'rgba(0,0,0,0.2)', fontWeight:700, letterSpacing:0.5 }}>fitfit AI</div>
+        </div>
+
+        <div style={{ width:'100%', display:'flex', gap:8 }}>
+          <button className="btn-matcha" style={{ flex:1 }}>공유하기</button>
+          <button className="btn-ghost"  style={{ flex:1 }} onClick={onClose}>닫기</button>
+        </div>
+        <div style={{ fontSize:11, color:'#b5b0a8', textAlign:'center' }}>AI 합성 이미지는 실제와 다를 수 있어요</div>
+      </div>
+    </div>
+  );
+}
+
+// ── Screen 3: History ──────────────────────────────────────────
+function HistoryScreen({ histories, setHistories, profiles }) {
+  const [editMode, setEditMode] = React.useState(false);
+  const [selected, setSelected] = React.useState(new Set());
+
+  const toggleSelect = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const deleteSelected = () => {
+    setHistories(prev => prev.filter(h => !selected.has(h.id)));
+    setSelected(new Set());
+    if (selected.size >= histories.length) setEditMode(false);
+  };
+
+  const formatDate = (d) => {
+    const date = new Date(d);
+    return `${date.getMonth()+1}월 ${date.getDate()}일`;
+  };
+
+  return (
+    <div className="screen-scroll" style={{ background:'#fffbe8', paddingBottom:90 }}>
+      <div className="status-cover"/>
+      <div style={{ position:'relative', padding:'72px 16px 12px', overflow:'hidden' }}>
+        <div style={{ position:'absolute', top:64,  right:28, width:7,  height:7,  borderRadius:'50%', background:'#3bd3fd',  animation:'floatB 2.8s ease-in-out infinite', opacity:0.8 }}/>
+        <div style={{ position:'absolute', top:100, right:18, width:18, height:18, borderRadius:'50%', background:'#84e7a5',  animation:'floatC 3.6s ease-in-out infinite', opacity:0.75 }}/>
+        <div style={{ position:'absolute', top:80,  right:60, width:5,  height:5,  borderRadius:'50%', background:'#fc7981',  animation:'floatA 2.5s ease-in-out infinite', opacity:0.8 }}/>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2, position:'relative', zIndex:1 }}>
+          <span style={{ fontSize:26, fontWeight:900, letterSpacing:-0.5, color:'#fc7981', fontFamily:"'Nunito','Pretendard',sans-serif" }}>fitfit</span>
+          <span style={{ background:'#fc7981', color:'#fff', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:100, letterSpacing:0.5, textTransform:'uppercase' }}>BETA</span>
+        </div>
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', position:'relative', zIndex:1 }}>
+          <div>
+            <div style={{ fontSize:20, fontWeight:700, letterSpacing:-0.6, color:'#000', fontFeatureSettings:'"ss01","ss03"' }}>히스토리</div>
+            <div style={{ fontSize:12, color:'#9f9b93' }}>추천받은 상품 {histories.length}개</div>
+          </div>
+          <div style={{ display:'flex', gap:8 }}>
+            {editMode && selected.size > 0 && (
+              <button onClick={deleteSelected}
+                style={{ background:'#fff0f1', border:'1.5px solid #fc7981', borderRadius:10, padding:'7px 12px', color:'#c0434a', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:4 }}>
+                {Icon.trash} {selected.size}개 삭제
+              </button>
+            )}
+            <button className="btn-ghost" onClick={() => { setEditMode(!editMode); setSelected(new Set()); }}>
+              {editMode ? '완료' : '편집'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom orbs */}
+      <div style={{ position:'absolute', bottom:100, right:24, width:16, height:16, borderRadius:'50%', background:'#a78bfa', animation:'floatA 3.4s ease-in-out infinite', opacity:0.85, zIndex:5, pointerEvents:'none' }}/>
+      <div style={{ position:'absolute', bottom:130, right:50, width:10, height:10, borderRadius:'50%', background:'#f8cc65', animation:'floatB 4.2s ease-in-out infinite', opacity:0.9,  zIndex:5, pointerEvents:'none' }}/>
+
+      {histories.length === 0 ? (
+        <div style={{ padding:'60px 16px', display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
+          <div style={{ fontSize:48 }}>📭</div>
+          <div style={{ fontSize:15, fontWeight:600, color:'#55534e' }}>아직 추천받은 상품이 없어요</div>
+          <div style={{ fontSize:13, color:'#9f9b93', textAlign:'center', lineHeight:1.5 }}>사이즈 추천 화면에서<br/>AI 추천을 받아보세요!</div>
+        </div>
+      ) : (
+        <div style={{ padding:'14px 16px 0', display:'flex', flexDirection:'column', gap:10 }}>
+          {histories.map((item, idx) => (
+            <div key={item.id} style={{ position:'relative' }}>
+              {(idx === 0 || item.date !== histories[idx-1].date) && (
+                <div style={{ fontSize:11, color:'#9f9b93', fontWeight:600, marginBottom:6, paddingLeft:editMode?36:0 }}>
+                  {formatDate(item.date)}
+                </div>
+              )}
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                {editMode && (
+                  <button onClick={() => toggleSelect(item.id)}
+                    style={{ width:24, height:24, borderRadius:'50%', flexShrink:0, border:`2px solid ${selected.has(item.id)?'#fc7981':'#dad4c8'}`, background:selected.has(item.id)?'#fc7981':'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', transition:'all 0.15s' }}>
+                    {selected.has(item.id) && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                  </button>
+                )}
+                <div className="history-item" style={{ flex:1, borderColor:'rgb(186,186,186)' }}>
+                  <div className="history-brand-badge" style={{ background:item.color, overflow:'hidden', padding:0 }}>
+                    {item.image
+                      ? <img src={item.image} alt={item.product} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { e.target.style.display='none'; }}/>
+                      : <span style={{ color:'#000', fontSize:10, fontWeight:800 }}>{item.brandShort}</span>
+                    }
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:11, color:'#9f9b93', fontWeight:600, textTransform:'uppercase', fontFamily:'Pretendard' }}>{item.brand}</div>
+                    <div style={{ fontSize:13, fontWeight:600, color:'#000', lineHeight:1.3, marginTop:2 }}>{item.product}</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:4, flexWrap:'wrap' }}>
+                      <span className="chip chip-matcha" style={{ fontSize:10, fontFamily:'Pretendard' }}>사이즈 {item.size}</span>
+                      {(() => {
+                        const prof = profiles.find(p => p.name === item.profile);
+                        const charBg = prof && CHAR_ICONS[prof.emoji] ? CHAR_ICONS[prof.emoji].bg : '#f0f0f0';
+                        return <span style={{ fontSize:10, fontWeight:600, color:'#000', background:charBg, padding:'3px 8px', borderRadius:100 }}>{item.profile}</span>;
+                      })()}
+                    </div>
+                  </div>
+                  <a href={item.url} style={{ textDecoration:'none' }}>
+                    <button className="btn-salmon" style={{ padding:'7px 12px', fontSize:12, display:'flex', alignItems:'center', gap:4 }}>
+                      {Icon.buy} 구매
+                    </button>
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Tab bar ────────────────────────────────────────────────────
+function TabBar({ activeTab, onTab }) {
+  const tabs = [
+    { id:'profile',   label:'프로필',
+      icon: active => (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active?'#000':'#9f9b93'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="9" cy="11.5" r="1" fill={active?'#000':'#9f9b93'} stroke="none"/>
+          <circle cx="15" cy="11.5" r="1" fill={active?'#000':'#9f9b93'} stroke="none"/>
+          <path d="M9 15c.8 1.2 5.2 1.2 6 0"/>
+        </svg>
+      ),
+    },
+    { id:'recommend', label:'사이즈 추천',
+      icon: active => (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active?'#000':'#9f9b93'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/>
+        </svg>
+      ),
+    },
+    { id:'history',   label:'히스토리',
+      icon: active => (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active?'#000':'#9f9b93'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      ),
+    },
+  ];
+
+  return (
+    <div className="bottom-nav">
+      {tabs.map(t => (
+        <div key={t.id} className="nav-item" onClick={() => onTab(t.id)}>
+          {t.icon(activeTab === t.id)}
+          <span className="nav-label" style={{ color:activeTab===t.id?'#000':'#9f9b93', fontWeight:activeTab===t.id?700:500 }}>{t.label}</span>
+          {activeTab === t.id && <div style={{ width:4, height:4, borderRadius:'50%', background:'#84e7a5', marginTop:-2 }}/>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── App ────────────────────────────────────────────────────────
+function App() {
+  const [activeTab,       setActiveTab]       = React.useState('profile');
+  const [profiles,        setProfiles]        = React.useState(SAMPLE_PROFILES);
+  const [selectedProfile, setSelectedProfile] = React.useState(SAMPLE_PROFILES[0]);
+  const [histories,       setHistories]       = React.useState(SAMPLE_HISTORY);
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:32, width:'100%' }}>
+      {/* Header */}
+      <div className="app-header">
+        <div className="app-logo">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <rect width="28" height="28" rx="8" fill="#84e7a5"/>
+            <text x="14" y="20" textAnchor="middle" fontSize="16" fill="#02492a" fontWeight="800">ff</text>
+          </svg>
+          fitfit
+          <span className="app-logo-badge">AI</span>
+        </div>
+        <div className="app-sub">아기 옷 사이즈 AI 추천 서비스</div>
+      </div>
+
+      {/* Three phone frames */}
+      <div className="phones-row">
+        {/* Phone 1 — Profile */}
+        <div className="phone-col">
+          <div className="phone-label">화면 1 — 프로필 등록</div>
+          <IOSDevice width={375} height={812} dark={false}>
+            <div style={{ position:'relative', height:'100%' }}>
+              <ProfileScreen
+                profiles={profiles} setProfiles={setProfiles}
+                selectedProfile={selectedProfile} setSelectedProfile={setSelectedProfile}
+                onRecommend={() => setActiveTab('recommend')}
+              />
+              <TabBar activeTab="profile" onTab={() => {}}/>
+            </div>
+          </IOSDevice>
+        </div>
+
+        {/* Phone 2 — Recommend */}
+        <div className="phone-col">
+          <div className="phone-label">화면 2 — 사이즈 추천</div>
+          <IOSDevice width={375} height={812} dark={false}>
+            <div style={{ position:'relative', height:'100%' }}>
+              <RecommendScreen
+                selectedProfile={selectedProfile}
+                histories={histories} setHistories={setHistories}
+              />
+              <TabBar activeTab="recommend" onTab={() => {}}/>
+            </div>
+          </IOSDevice>
+        </div>
+
+        {/* Phone 3 — History */}
+        <div className="phone-col">
+          <div className="phone-label">화면 3 — 히스토리</div>
+          <IOSDevice width={375} height={812} dark={false}>
+            <div style={{ position:'relative', height:'100%' }}>
+              <HistoryScreen
+                histories={histories} setHistories={setHistories}
+                profiles={profiles}
+              />
+              <TabBar activeTab="history" onTab={() => {}}/>
+            </div>
+          </IOSDevice>
+        </div>
+      </div>
+
+      {/* Info note */}
+      <div style={{ background:'#fff', border:'1.5px solid #dad4c8', borderRadius:16, padding:'14px 20px', maxWidth:900, width:'100%', display:'flex', gap:12, alignItems:'flex-start' }}>
+        <div style={{ fontSize:20 }}>💡</div>
+        <div>
+          <div style={{ fontSize:13, fontWeight:700, color:'#000', marginBottom:4 }}>인터랙티브 프로토타입</div>
+          <div style={{ fontSize:12, color:'#55534e', lineHeight:1.6 }}>
+            각 화면은 실제로 동작합니다. 프로필 추가/수정/삭제, AI 추천받기(2초 시뮬레이션), AI 입어보기 팝업, 히스토리 편집/삭제를 직접 테스트해 보세요.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
