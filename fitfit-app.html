@@ -323,7 +323,20 @@ function RecommendScreen({ selectedProfile, histories, setHistories }) {
     finally { setLoading(false); }
   };
   const saveToHistory = () => {
-    const newEntry = { id:Date.now(), brand:brand||'무민마마', product:product||'베어 프린트 오버롤', size:result?.recommendedSize||'80', date:new Date().toISOString().slice(0,10), profile:profile.name, url:url||'#', color:'#e8fdf0', brandShort:(brand||'무민마마').slice(0,2) };
+    const finalBrand   = result?.crawledBrand   || brand   || '브랜드 미상';
+    const finalProduct = result?.crawledProduct || product || '상품명 미상';
+    const newEntry = {
+      id: Date.now(),
+      brand:      finalBrand,
+      product:    finalProduct,
+      size:       result?.recommendedSize || '80',
+      date:       new Date().toISOString().slice(0, 10),
+      profile:    profile.name,
+      url:        url || '#',
+      color:      '#e8fdf0',
+      brandShort: finalBrand.slice(0, 2),
+      image:      result?.crawledImage || null,
+    };
     setHistories(prev => [newEntry, ...prev]);
   };
   const resetForm = () => { setShowResult(false); setUrl(''); setBrand(''); setProduct(''); setImageData(null); setImagePreview(null); setResult(null); setError(null); };
@@ -381,7 +394,18 @@ function RecommendScreen({ selectedProfile, histories, setHistories }) {
         </div>
       ) : (
         <div style={{ padding:'14px 16px 0', display:'flex', flexDirection:'column', gap:12 }}>
-          {(brand||product) && <div style={{ background:'#fff', border:'1.5px solid #dad4c8', borderRadius:14, padding:'12px 14px' }}><div style={{ fontSize:11, color:'#9f9b93', fontWeight:600, textTransform:'uppercase', letterSpacing:0.8 }}>{brand||'무민마마'}</div><div style={{ fontSize:14, fontWeight:600, color:'#000', marginTop:2 }}>{product||'베어 프린트 오버롤'}</div></div>}
+          {(result?.crawledBrand || result?.crawledProduct || brand || product) && (
+            <div style={{ background:'#fff', border:'1.5px solid #dad4c8', borderRadius:14, padding:'12px 14px', display:'flex', alignItems:'center', gap:12 }}>
+              {result?.crawledImage && (
+                <img src={result.crawledImage} alt="상품이미지" style={{ width:52, height:52, borderRadius:10, objectFit:'cover', flexShrink:0 }} onError={e => { e.target.style.display='none'; }}/>
+              )}
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:11, color:'#9f9b93', fontWeight:600, textTransform:'uppercase', letterSpacing:0.8 }}>{result?.crawledBrand || brand || ''}</div>
+                <div style={{ fontSize:14, fontWeight:600, color:'#000', marginTop:2 }}>{result?.crawledProduct || product || ''}</div>
+                {url && <div style={{ fontSize:11, color:'#3bd3fd', marginTop:3 }}>🔗 URL에서 자동 추출</div>}
+              </div>
+            </div>
+          )}
           <div className="result-card">
             <div style={{ fontSize:12, color:'#84e7a5', fontWeight:600, textTransform:'uppercase', marginBottom:10, letterSpacing:'0.2px' }}>AI 추천 사이즈</div>
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12, marginBottom:14 }}>
