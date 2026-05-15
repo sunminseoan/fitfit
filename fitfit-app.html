@@ -385,7 +385,7 @@ function RecommendScreen({ selectedProfile, histories, setHistories }) {
           <div className="result-card">
             <div style={{ fontSize:12, color:'#84e7a5', fontWeight:600, textTransform:'uppercase', marginBottom:10, letterSpacing:'0.2px' }}>AI 추천 사이즈</div>
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12, marginBottom:14 }}>
-              <div className="result-size-badge" style={{ borderRadius:'50%', width:100, height:100, display:'flex', alignItems:'center', justifyContent:'center', padding:0, fontSize:44 }}>{result.recommendedSize}</div>
+              <div className="result-size-badge" style={{ borderRadius:'50%', width:100, height:100, display:'flex', alignItems:'center', justifyContent:'center', padding:8, textAlign:'center', lineHeight:1.2, fontSize: result.recommendedSize.length <= 2 ? 44 : result.recommendedSize.length <= 4 ? 32 : result.recommendedSize.length <= 7 ? 22 : 16 }}>{result.recommendedSize}</div>
               <div style={{ fontSize:11, color:'#9f9b93', marginTop:-6 }}>KR 사이즈 기준</div>
               <div style={{ display:'flex', flexWrap:'wrap', gap:6, justifyContent:'center' }}>
                 <span style={{ color:'#84e7a5', padding:'3px 8px', borderRadius:8, fontSize:11, fontWeight:600, background:'rgba(255,255,255,0.13)' }}>{result.fitType}</span>
