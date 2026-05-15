@@ -259,7 +259,7 @@ function ProfileScreen({ profiles, setProfiles, selectedProfile, setSelectedProf
       <div style={{ position:'absolute', bottom:128, left:46, width:12, height:12, borderRadius:'50%', background:'#84e7a5', animation:'floatB 4s ease-in-out infinite', opacity:0.8, zIndex:5, pointerEvents:'none' }}/>
       {showForm && (
         <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'flex-end', backdropFilter:'blur(4px)' }}>
-          <div style={{ background:'#faf9f7', borderRadius:'24px 24px 0 0', padding:'20px 20px 36px', width:'100%', maxHeight:'85vh', overflowY:'auto' }}>
+          <div style={{ background:'#faf9f7', borderRadius:'24px 24px 0 0', padding:'20px 20px 100px', width:'100%', maxHeight:'85vh', overflowY:'auto' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
               <div style={{ fontSize:17, fontWeight:700, letterSpacing:-0.5 }}>{editTarget?'프로필 수정':'새 프로필'}</div>
               <button onClick={() => setShowForm(false)} style={{ background:'#f0ede8', border:'none', borderRadius:'50%', width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#55534e' }}>{Icon.close}</button>
@@ -538,9 +538,40 @@ function TabBar({ activeTab, onTab }) {
 // ── 핵심 수정: 단일 폰 프레임 + 탭 전환 ──
 function App() {
   const [activeTab,       setActiveTab]       = React.useState('profile');
-  const [profiles,        setProfiles]        = React.useState(SAMPLE_PROFILES);
-  const [selectedProfile, setSelectedProfile] = React.useState(SAMPLE_PROFILES[0]);
-  const [histories,       setHistories]       = React.useState(SAMPLE_HISTORY);
+  const [profiles, setProfilesRaw] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem('fitfit_profiles');
+      return saved ? JSON.parse(saved) : SAMPLE_PROFILES;
+    } catch { return SAMPLE_PROFILES; }
+  });
+  const [selectedProfile, setSelectedProfile] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem('fitfit_profiles');
+      const list = saved ? JSON.parse(saved) : SAMPLE_PROFILES;
+      return list[0] || null;
+    } catch { return SAMPLE_PROFILES[0]; }
+  });
+  const [histories, setHistoriesRaw] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem('fitfit_histories');
+      return saved ? JSON.parse(saved) : SAMPLE_HISTORY;
+    } catch { return SAMPLE_HISTORY; }
+  });
+
+  const setProfiles = (updater) => {
+    setProfilesRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      try { localStorage.setItem('fitfit_profiles', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+  const setHistories = (updater) => {
+    setHistoriesRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      try { localStorage.setItem('fitfit_histories', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
   const isMobile = window.innerWidth <= 480;
 
   const content = (
