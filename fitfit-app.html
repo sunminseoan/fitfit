@@ -336,6 +336,7 @@ function RecommendScreen({ selectedProfile, histories, setHistories }) {
       color:      '#e8fdf0',
       brandShort: finalBrand.slice(0, 2),
       image:      result?.crawledImage || null,
+      price:      result?.crawledPrice || null,
     };
     setHistories(prev => [newEntry, ...prev]);
   };
@@ -402,6 +403,7 @@ function RecommendScreen({ selectedProfile, histories, setHistories }) {
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:11, color:'#9f9b93', fontWeight:600, textTransform:'uppercase', letterSpacing:0.8 }}>{result?.crawledBrand || brand || ''}</div>
                 <div style={{ fontSize:14, fontWeight:600, color:'#000', marginTop:2 }}>{result?.crawledProduct || product || ''}</div>
+                {result?.crawledPrice && <div style={{ fontSize:13, fontWeight:700, color:'#078a52', marginTop:4 }}>{result.crawledPrice}</div>}
                 {url && <div style={{ fontSize:11, color:'#3bd3fd', marginTop:3 }}>🔗 URL에서 자동 추출</div>}
               </div>
             </div>
@@ -456,9 +458,36 @@ function TryOnOverlay({ profile, onClose, brand, product, size='80' }) {
 function HistoryScreen({ histories, setHistories, profiles }) {
   const [editMode, setEditMode] = React.useState(false);
   const [selected, setSelected] = React.useState(new Set());
+  const [editItem, setEditItem] = React.useState(null);
+  const [editForm, setEditForm] = React.useState({ brand:'', product:'', price:'' });
+
   const toggleSelect = (id) => { setSelected(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; }); };
   const deleteSelected = () => { setHistories(prev => prev.filter(h => !selected.has(h.id))); setSelected(new Set()); if (selected.size >= histories.length) setEditMode(false); };
   const formatDate = (d) => { const date = new Date(d); return `${date.getMonth()+1}월 ${date.getDate()}일`; };
+
+  const openEdit = (item) => {
+    setEditItem(item);
+    setEditForm({ brand: item.brand || '', product: item.product || '', price: item.price || '', image: item.image || null });
+  };
+  const saveEdit = () => {
+    setHistories(prev => prev.map(h => h.id === editItem.id ? {
+      ...h,
+      brand:      editForm.brand,
+      product:    editForm.product,
+      price:      editForm.price || null,
+      brandShort: editForm.brand.slice(0, 2),
+      image:      editForm.image || null,
+    } : h));
+    setEditItem(null);
+  };
+  const editFileRef = React.useRef(null);
+  const handleEditImage = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setEditForm(f => ({ ...f, image: ev.target.result }));
+    reader.readAsDataURL(file);
+  };
   return (
     <div className="screen-scroll" style={{ background:'#fffbe8', paddingBottom:90 }}>
       <div className="status-cover"/>
@@ -493,7 +522,7 @@ function HistoryScreen({ histories, setHistories, profiles }) {
               {(idx===0 || item.date!==histories[idx-1].date) && <div style={{ fontSize:11, color:'#9f9b93', fontWeight:600, marginBottom:6, paddingLeft:editMode?36:0 }}>{formatDate(item.date)}</div>}
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 {editMode && <button onClick={() => toggleSelect(item.id)} style={{ width:24, height:24, borderRadius:'50%', flexShrink:0, border:`2px solid ${selected.has(item.id)?'#fc7981':'#dad4c8'}`, background:selected.has(item.id)?'#fc7981':'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', transition:'all 0.15s' }}>{selected.has(item.id) && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}</button>}
-                <div className="history-item" style={{ flex:1, borderColor:'rgb(186,186,186)' }}>
+                <div className="history-item" style={{ flex:1, borderColor:'rgb(186,186,186)', cursor:'pointer' }} onClick={() => !editMode && openEdit(item)}>
                   <div className="history-brand-badge" style={{ background:item.color, overflow:'hidden', padding:0 }}>
                     {item.image ? <img src={item.image} alt={item.product} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { e.target.style.display='none'; }}/> : <span style={{ color:'#000', fontSize:10, fontWeight:800 }}>{item.brandShort}</span>}
                   </div>
@@ -502,6 +531,7 @@ function HistoryScreen({ histories, setHistories, profiles }) {
                     <div style={{ fontSize:13, fontWeight:600, color:'#000', lineHeight:1.3, marginTop:2 }}>{item.product}</div>
                     <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:4, flexWrap:'wrap' }}>
                       <span className="chip chip-matcha" style={{ fontSize:10, fontFamily:'Pretendard' }}>사이즈 {item.size}</span>
+                      {item.price && <span style={{ fontSize:10, fontWeight:600, color:'#9d6a09', background:'#fffbe8', padding:'3px 8px', borderRadius:100 }}>{item.price}</span>}
                       {(() => { const prof = profiles.find(p => p.name===item.profile); const charBg = prof && CHAR_ICONS[prof.emoji] ? CHAR_ICONS[prof.emoji].bg : '#f0f0f0'; return <span style={{ fontSize:10, fontWeight:600, color:'#000', background:charBg, padding:'3px 8px', borderRadius:100 }}>{item.profile}</span>; })()}
                     </div>
                   </div>
@@ -510,6 +540,57 @@ function HistoryScreen({ histories, setHistories, profiles }) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 히스토리 편집 바텀시트 */}
+      {editItem && (
+        <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'flex-end', backdropFilter:'blur(4px)' }}>
+          <div style={{ background:'#faf9f7', borderRadius:'24px 24px 0 0', padding:'20px 20px 100px', width:'100%', maxHeight:'85vh', overflowY:'auto' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+              <div style={{ fontSize:17, fontWeight:700, letterSpacing:-0.5 }}>히스토리 편집</div>
+              <button onClick={() => setEditItem(null)} style={{ background:'#f0ede8', border:'none', borderRadius:'50%', width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#55534e' }}>{Icon.close}</button>
+            </div>
+
+            {/* 이미지 편집 */}
+            <div style={{ marginBottom:14 }}>
+              <div className="section-label" style={{ letterSpacing:0 }}>상품 이미지</div>
+              <input ref={editFileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleEditImage}/>
+              <div onClick={() => editFileRef.current.click()} style={{ position:'relative', width:'100%', height:100, borderRadius:12, overflow:'hidden', border:'1.5px dashed #dad4c8', cursor:'pointer', background:'#faf9f7', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                {editForm.image ? (
+                  <>
+                    <img src={editForm.image} alt="상품" style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => e.target.style.display='none'}/>
+                    <div style={{ position:'absolute', bottom:8, right:8, background:'rgba(255,255,255,0.9)', borderRadius:100, padding:'4px 10px', fontSize:11, fontWeight:600, color:'#000', display:'flex', alignItems:'center', gap:4 }}>
+                      {Icon.camera} 변경
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+                    <div style={{ color:'#9f9b93' }}>{Icon.image}</div>
+                    <div style={{ fontSize:12, color:'#9f9b93' }}>사진 선택</div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <div>
+                <div className="section-label" style={{ letterSpacing:0 }}>브랜드명</div>
+                <input className="clay-input" placeholder="예: 무민마마" value={editForm.brand} onChange={e => setEditForm(f => ({ ...f, brand:e.target.value }))} style={{ height:44 }}/>
+              </div>
+              <div>
+                <div className="section-label" style={{ letterSpacing:0 }}>상품명</div>
+                <input className="clay-input" placeholder="예: 베어 프린트 오버롤" value={editForm.product} onChange={e => setEditForm(f => ({ ...f, product:e.target.value }))} style={{ height:44 }}/>
+              </div>
+              <div>
+                <div className="section-label" style={{ letterSpacing:0 }}>가격</div>
+                <input className="clay-input" placeholder="예: 32,000원" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price:e.target.value }))} style={{ height:44 }}/>
+              </div>
+            </div>
+            <div style={{ marginTop:20, display:'flex', gap:8 }}>
+              <button onClick={() => setEditItem(null)} className="btn-ghost" style={{ flex:1, height:50 }}>취소</button>
+              <button onClick={saveEdit} className="btn-primary" style={{ flex:2, height:50 }}>저장하기</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
