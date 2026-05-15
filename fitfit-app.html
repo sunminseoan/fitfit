@@ -129,11 +129,11 @@ function IOSDevice({ children, width = 375, height = 812 }) {
 }
 </script>
 <script type="text/babel">
-async function callClaude(profile, brand, product) {
+async function callClaude(profile, brand, product, image) {
   const res = await fetch('/api/recommend', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ profile, brand, product }),
+    body: JSON.stringify({ profile, brand, product, image }),
   });
   if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || `API 오류 (${res.status})`); }
   return res.json();
@@ -285,7 +285,16 @@ function RecommendScreen({ selectedProfile, histories, setHistories }) {
   const [url, setUrl] = React.useState('');
   const [brand, setBrand] = React.useState('');
   const [product, setProduct] = React.useState('');
-  const [hasImage, setHasImage] = React.useState(false);
+  const [imageData, setImageData] = React.useState(null);
+  const [imagePreview, setImagePreview] = React.useState(null);
+  const fileInputRef = React.useRef(null);
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { setImageData(ev.target.result); setImagePreview(ev.target.result); };
+    reader.readAsDataURL(file);
+  };
   const [showResult, setShowResult] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [showTryOn, setShowTryOn] = React.useState(false);
@@ -295,7 +304,7 @@ function RecommendScreen({ selectedProfile, histories, setHistories }) {
   const profile = selectedProfile || SAMPLE_PROFILES[0];
   const handleRecommend = async () => {
     setLoading(true); setError(null);
-    try { const data = await callClaude(profile, brand, product); setResult(data); setShowResult(true); }
+    try { const data = await callClaude(profile, brand, product, imageData); setResult(data); setShowResult(true); }
     catch (err) { setError(err.message || 'AI 추천 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.'); }
     finally { setLoading(false); }
   };
@@ -303,7 +312,7 @@ function RecommendScreen({ selectedProfile, histories, setHistories }) {
     const newEntry = { id:Date.now(), brand:brand||'무민마마', product:product||'베어 프린트 오버롤', size:result?.recommendedSize||'80', date:new Date().toISOString().slice(0,10), profile:profile.name, url:url||'#', color:'#e8fdf0', brandShort:(brand||'무민마마').slice(0,2) };
     setHistories(prev => [newEntry, ...prev]);
   };
-  const resetForm = () => { setShowResult(false); setUrl(''); setBrand(''); setProduct(''); setHasImage(false); setResult(null); setError(null); };
+  const resetForm = () => { setShowResult(false); setUrl(''); setBrand(''); setProduct(''); setImageData(null); setImagePreview(null); setResult(null); setError(null); };
   return (
     <div className="screen-scroll" style={{ background:'#fffbe8', paddingBottom:90 }}>
       <div className="status-cover"/>
@@ -332,8 +341,16 @@ function RecommendScreen({ selectedProfile, histories, setHistories }) {
           </div>
           <div>
             <div className="section-label" style={{ letterSpacing:'0.4px' }}>사이즈표 이미지 첨부</div>
-            <div className="upload-box" onClick={() => setHasImage(!hasImage)} style={{ backgroundColor:'#fffbe8' }}>
-              {hasImage ? <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}><div style={{ fontSize:28 }}>🖼️</div><div style={{ fontSize:13, fontWeight:600, color:'#078a52' }}>사이즈표 첨부됨</div><div style={{ fontSize:11, color:'#9f9b93' }}>탭하여 변경</div></div> : <><div style={{ color:'#9f9b93' }}>{Icon.image}</div><div style={{ fontSize:13, fontWeight:600, color:'#55534e' }}>이미지 첨부</div><div style={{ fontSize:11, color:'#9f9b93' }}>브랜드 사이즈표 사진을 올려주세요</div></>}
+            <input ref={fileInputRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleImageChange}/>
+            <div className="upload-box" onClick={() => fileInputRef.current.click()} style={{ backgroundColor:'#fffbe8' }}>
+              {imagePreview ? (
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, width:'100%' }}>
+                  <img src={imagePreview} alt="사이즈표" style={{ width:'100%', maxHeight:120, objectFit:'contain', borderRadius:8 }}/>
+                  <div style={{ fontSize:11, color:'#9f9b93' }}>탭하여 변경</div>
+                </div>
+              ) : (
+                <><div style={{ color:'#9f9b93' }}>{Icon.image}</div><div style={{ fontSize:13, fontWeight:600, color:'#55534e' }}>이미지 첨부</div><div style={{ fontSize:11, color:'#9f9b93' }}>브랜드 사이즈표 사진을 올려주세요</div></>
+              )}
             </div>
           </div>
           <div>
